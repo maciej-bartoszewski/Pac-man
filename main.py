@@ -17,19 +17,19 @@ def check_win(board):
 
 
 def reset_game():
-    GameData.LVL = 0
-    GameData.POINTS = 0
-    GameData.RUNNING = True
-    GameData.TURN = 0
-    GameData.LIVES = 3
-    GameData.GAME_WON = False
+    GameData.lvl = 0
+    GameData.points = 0
+    GameData.running = True
+    GameData.turn = 0
+    GameData.lives = 3
+    GameData.game_won = False
 
 
 def save_new_score():
-    GameData.BEST_SCORE = GameData.POINTS
+    GameData.best_score = GameData.points
 
     with open("best_score", "wt") as file:
-        file.write(str(GameData.POINTS))
+        file.write(str(GameData.points))
 
 
 def draw_board_and_score(board):
@@ -82,17 +82,17 @@ def draw_board_and_score(board):
                                  (col * B_WIDTH, row * B_HEIGHT + (0.5 * B_HEIGHT)),
                                  ((col + 1) * B_WIDTH, row * B_HEIGHT + (0.5 * B_HEIGHT)), 4)
 
-    for live in range(GameData.LIVES):
+    for live in range(GameData.lives):
         screen.blit(HEART, (770 - (live * 40), 830))
 
-    score_text = font.render(f"Score: {GameData.POINTS}", True, 'white')
+    score_text = font.render(f"Score: {GameData.points}", True, 'white')
     screen.blit(score_text, (20, 830))
 
-    best_score_text = font.render(f"Best score: {GameData.BEST_SCORE}", True, 'white')
+    best_score_text = font.render(f"Best score: {GameData.best_score}", True, 'white')
     screen.blit(best_score_text, (340, 830))
 
 
-def show_game(pacman, blue, pink, red, yellow, lvl_board):
+def draw_heroes(pacman, blue, pink, red, yellow, lvl_board):
     pygame.time.wait(DELAY)
 
     # B_WIDTH == B_HEIGHT
@@ -116,44 +116,6 @@ def show_game(pacman, blue, pink, red, yellow, lvl_board):
     pacman.rotate_img(PACMAN_IMG_1, pacman.rotate_direction)
 
 
-def game_over(image):
-    while True:
-        screen.fill("black")
-
-        screen.blit(image, (0, 0))
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    return
-
-        pygame.display.update()
-
-
-def pause_or_next_lvl(image):
-    while True:
-        screen.fill("black")
-
-        screen.blit(image, (0, 0))
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    if GameData.POINTS > GameData.BEST_SCORE:
-                        save_new_score()
-                    main_menu()
-                if event.key == pygame.K_SPACE:
-                    return
-
-        pygame.display.update()
-
-
 def game():
     ghosts = [13, 14, 15, 16]
     power_up = False
@@ -167,25 +129,25 @@ def game():
 
     game_boards = copy.deepcopy(boards)
 
-    while GameData.RUNNING:
+    while GameData.running:
         screen.fill("black")
         clock.tick(60)
 
         if not pacman.alive:
             pacman.alive = True
 
-        lvl_board = game_boards[GameData.LVL]
+        lvl_board = game_boards[GameData.lvl]
         if start:
             # Set starting values if game is starting
-            pacman.position(lvl_board)
+            pacman.check_position(lvl_board)
             pacman.starting_x, pacman.starting_y = pacman.x, pacman.y
-            blue.position(lvl_board)
+            blue.check_position(lvl_board)
             blue.starting_x, blue.starting_y = blue.x, blue.y
-            pink.position(lvl_board)
+            pink.check_position(lvl_board)
             pink.starting_x, pink.starting_y = pink.x, pink.y
-            red.position(lvl_board)
+            red.check_position(lvl_board)
             red.starting_x, red.starting_y = red.x, red.y
-            yellow.position(lvl_board)
+            yellow.check_position(lvl_board)
             yellow.starting_x, yellow.starting_y = yellow.x, yellow.y
 
             pacman.set_starting_cords_on_other()
@@ -194,7 +156,7 @@ def game():
             red.set_starting_cords_on_other()
             yellow.set_starting_cords_on_other()
 
-            show_game(pacman, blue, pink, red, yellow, lvl_board)
+            draw_heroes(pacman, blue, pink, red, yellow, lvl_board)
             start = False
         else:
             # Change power up variables
@@ -228,7 +190,7 @@ def game():
                         pacman.prev_move = pacman.move
                         pacman.move = 3
                     elif event.key == pygame.K_ESCAPE:
-                        pause_or_next_lvl(PAUSE)
+                        pause_or_next_lvl_menu(PAUSE)
 
             # Pacman moves
             pacman.find_possible_moves(lvl_board)
@@ -259,54 +221,54 @@ def game():
                     pacman.pac_died(blue, pink, red, yellow, lvl_board)
 
             if pacman.val == 1:
-                GameData.POINTS += 10
+                GameData.points += 10
 
             # If pacman ate big circle, then run power up
             if pacman.val == 2:
                 power_up = True
                 power_up_turns = 0
-                if not blue.is_ghost_in_prison():
+                if not blue.in_prison():
                     blue.img = PU_GHOST
-                if not pink.is_ghost_in_prison():
+                if not pink.in_prison():
                     pink.img = PU_GHOST
-                if not red.is_ghost_in_prison():
+                if not red.in_prison():
                     red.img = PU_GHOST
-                if not yellow.is_ghost_in_prison():
+                if not yellow.in_prison():
                     yellow.img = PU_GHOST
 
             # Blue ghost moves or kills the pac man
             if pacman.alive:
-                if GameData.TURN > 10:
+                if GameData.turn > 10:
                     # if function return false - pacman died
-                    if not blue.ghost_make_move(lvl_board, power_up):
+                    if not blue.make_move(lvl_board, power_up):
                         pacman.pac_died(blue, pink, red, yellow, lvl_board)
 
             # Pink ghost moves or kills the pac man
             if pacman.alive:
-                if GameData.TURN > 20:
-                    if not pink.ghost_make_move(lvl_board, power_up):
+                if GameData.turn > 20:
+                    if not pink.make_move(lvl_board, power_up):
                         # if function return false - pacman died
                         pacman.pac_died(blue, pink, red, yellow, lvl_board)
 
             # Red ghost moves or kills the pac man
             if pacman.alive:
-                if GameData.TURN > 40:
-                    if not red.ghost_make_move(lvl_board, power_up):
+                if GameData.turn > 40:
+                    if not red.make_move(lvl_board, power_up):
                         # if function return false - pacman died
                         pacman.pac_died(blue, pink, red, yellow, lvl_board)
 
             # Yellow ghost moves or kills the pac man
             if pacman.alive:
-                if GameData.TURN > 60:
-                    if not yellow.ghost_make_move(lvl_board, power_up):
+                if GameData.turn > 60:
+                    if not yellow.make_move(lvl_board, power_up):
                         # if function return false - pacman died
                         pacman.pac_died(blue, pink, red, yellow, lvl_board)
 
-            if GameData.LIVES == -1:
+            if GameData.lives == -1:
                 break
 
-            GameData.TURN += 1
-            show_game(pacman, blue, pink, red, yellow, lvl_board)
+            GameData.turn += 1
+            draw_heroes(pacman, blue, pink, red, yellow, lvl_board)
 
         # Disable power up and reset ghosts images
         if power_up_turns == 50:
@@ -320,8 +282,8 @@ def game():
         if check_win(lvl_board):
             pacman.rotate_img(PACMAN_IMG_1, 3)
             start = True
-            GameData.LVL += 1
-            GameData.TURN = 0
+            GameData.lvl += 1
+            GameData.turn = 0
             power_up = False
             pacman.set_default()
             blue.set_default()
@@ -329,13 +291,51 @@ def game():
             red.set_default()
             yellow.set_default()
 
-            if GameData.LVL == 2:
-                GameData.RUNNING = False
-                GameData.GAME_WON = True
-                for live in range(GameData.LIVES):
-                    GameData.POINTS += 200
+            if GameData.lvl == 2:
+                GameData.running = False
+                GameData.game_won = True
+                for live in range(GameData.lives):
+                    GameData.points += 200
             else:
-                pause_or_next_lvl(NEXT_LVL)
+                pause_or_next_lvl_menu(NEXT_lvl)
+
+
+def game_over_menu(image):
+    while True:
+        screen.fill("black")
+
+        screen.blit(image, (0, 0))
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    return
+
+        pygame.display.update()
+
+
+def pause_or_next_lvl_menu(image):
+    while True:
+        screen.fill("black")
+
+        screen.blit(image, (0, 0))
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    if GameData.points > GameData.best_score:
+                        save_new_score()
+                    main_menu()
+                if event.key == pygame.K_SPACE:
+                    return
+
+        pygame.display.update()
 
 
 def main_menu():
@@ -364,13 +364,13 @@ def main_menu():
         if start_button.collidepoint((mouse_x, mouse_y)):
             if click:
                 game()
-                if GameData.POINTS > GameData.BEST_SCORE:
+                if GameData.points > GameData.best_score:
                     save_new_score()
-                if GameData.GAME_WON:
+                if GameData.game_won:
                     image = WON_IMG
                 else:
                     image = LOST_IMG
-                game_over(image)
+                game_over_menu(image)
                 reset_game()
 
         if exit_button.collidepoint((mouse_x, mouse_y)):
@@ -384,7 +384,7 @@ def main_menu():
 if __name__ == "__main__":
     with open("best_score", "rt") as file:
         try:
-            GameData.BEST_SCORE = int(file.readline())
+            GameData.best_score = int(file.readline())
         except:
             pass
 

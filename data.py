@@ -3,13 +3,13 @@ import pygame
 
 class GameData:
     # Global game variables
-    POINTS = 0
-    BEST_SCORE = 0
-    LVL = 0
-    TURN = 0
-    RUNNING = True
-    GAME_WON = False
-    LIVES = 3
+    points = 0
+    best_score = 0
+    lvl = 0
+    turn = 0
+    running = True
+    game_won = False
+    lives = 3
 
 
 # Board and screen sizes
@@ -36,7 +36,7 @@ EXIT_BUTTON = pygame.transform.scale(pygame.image.load("images/exit.png"), (150,
 WON_IMG = pygame.transform.scale(pygame.image.load("images/won.png"), (800, 800))
 LOST_IMG = pygame.transform.scale(pygame.image.load("images/lost.png"), (800, 800))
 PAUSE = pygame.transform.scale(pygame.image.load("images/pause.png"), (800, 800))
-NEXT_LVL = pygame.transform.scale(pygame.image.load("images/next_lvl.png"), (800, 800))
+NEXT_lvl = pygame.transform.scale(pygame.image.load("images/next_lvl.png"), (800, 800))
 
 # Pygame settings
 pygame.init()

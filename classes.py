@@ -14,6 +14,7 @@ class Hero:
         self.starting_y = 0
         self.x = 0
         self.y = 0
+        self.allowed_moves = []
         self.prev_x = 0
         self.prev_y = 0
         self.val = 0
@@ -22,13 +23,37 @@ class Hero:
         self.draw_x = 0
         self.draw_y = 0
 
-    def position(self, board):
+    def set_default(self):
+        self.set_starting_cords_on_other()
+        self.val = 0
+        self.prev_val = 0
+        self.move = 3
+        self.prev_move = 3
+        self.img = self.main_img
+
+    def check_position(self, board):
         for row in range(len(board)):
             for col in range(len(board[0])):
                 if board[row][col] == self.id:
                     self.x = col
                     self.y = row
                     return
+
+    def find_possible_moves(self, board):
+        hero_moves = [True, True, True, True, True]
+
+        if board[self.y + 1][self.x] not in self.allowed_moves:
+            hero_moves[0] = False
+        if board[self.y - 1][self.x] not in self.allowed_moves:
+            hero_moves[1] = False
+        if self.x != 0:
+            if board[self.y][self.x - 1] not in self.allowed_moves:
+                hero_moves[2] = False
+        if self.x != 29:
+            if board[self.y][self.x + 1] not in self.allowed_moves:
+                hero_moves[3] = False
+
+        self.possible_moves = hero_moves
 
     def change_position(self, board):
         self.prev_x = self.x
@@ -113,35 +138,13 @@ class Pacman(Hero):
         if move == 2:
             self.img = pygame.transform.flip(self.img, True, False)
 
-    def set_default(self):
-        self.set_starting_cords_on_other()
-        self.val = 0
-        self.prev_val = 0
-        self.move = 3
-        self.prev_move = 3
-        self.img = self.main_img
-
     def find_possible_moves(self, board):
-        # 0 - up, 1 - down, 2 - left, 3 - right, 4 - stay
-        hero_moves = [True, True, True, True, True]
-        allowed_moves = [0, 1, 2, 11, 12, 13, 14, 15, 16]
-
-        if board[self.y + 1][self.x] not in allowed_moves:
-            hero_moves[0] = False
-        if board[self.y - 1][self.x] not in allowed_moves:
-            hero_moves[1] = False
-        if self.x != 0:
-            if board[self.y][self.x - 1] not in allowed_moves:
-                hero_moves[2] = False
-        if self.x != 29:
-            if board[self.y][self.x + 1] not in allowed_moves:
-                hero_moves[3] = False
-
-        self.possible_moves = hero_moves
+        self.allowed_moves = [0, 1, 2, 11, 12, 13, 14, 15, 16]
+        super().find_possible_moves(board)
 
     def pac_died(self, blue, pink, red, yellow, board):
         self.alive = False
-        GameData.TURN = 0
+        GameData.turn = 0
 
         board[self.y][self.x] = 0
         if blue.prev_val != 10:
@@ -165,9 +168,9 @@ class Pacman(Hero):
         red.set_default()
         yellow.set_default()
 
-        if GameData.LIVES == 0:
-            GameData.RUNNING = False
-        GameData.LIVES -= 1
+        if GameData.lives == 0:
+            GameData.running = False
+        GameData.lives -= 1
 
         self.rotate_img(PACMAN_IMG_1, 3)
 
@@ -178,22 +181,17 @@ class Ghost(Hero):
         self.turns_to_wait = 0
 
     def set_default(self):
-        self.set_starting_cords_on_other()
-        self.val = 0
-        self.prev_val = 0
-        self.move = 3
-        self.prev_move = 3
+        super().set_default()
         self.turns_to_wait = 0
-        self.img = self.main_img
 
-    def is_ghost_in_prison(self):
-        if GameData.LVL == 0:
+    def in_prison(self):
+        if GameData.lvl == 0:
             if 11 < self.x < 18:
                 if 13 < self.y < 17:
                     return True
             return False
 
-        elif GameData.LVL == 1:
+        elif GameData.lvl == 1:
             if 12 < self.x < 17:
                 if 13 < self.y < 16:
                     return True
@@ -203,27 +201,13 @@ class Ghost(Hero):
             return False
 
     def find_possible_moves(self, board):
-        # 0 - up, 1 - down, 2 - left, 3 - right, 4 - stay
-        hero_moves = [True, True, True, True, True]
-        allowed_moves = [0, 1, 2, 9, 10]
-        if not self.is_ghost_in_prison():
-            allowed_moves.remove(9)
+        self.allowed_moves = [0, 1, 2, 9, 10]
+        if not self.in_prison():
+            self.allowed_moves.remove(9)
+        super().find_possible_moves(board)
 
-        if board[self.y + 1][self.x] not in allowed_moves:
-            hero_moves[0] = False
-        if board[self.y - 1][self.x] not in allowed_moves:
-            hero_moves[1] = False
-        if self.x != 0:
-            if board[self.y][self.x - 1] not in allowed_moves:
-                hero_moves[2] = False
-        if self.x != 29:
-            if board[self.y][self.x + 1] not in allowed_moves:
-                hero_moves[3] = False
-
-        self.possible_moves = hero_moves
-
-    def ghost_way(self):
-        if self.is_ghost_in_prison():
+    def next_move(self):
+        if self.in_prison():
             # choose move when ghost is in prison
             new_move = 1
             if not self.possible_moves[1]:
@@ -258,11 +242,11 @@ class Ghost(Hero):
 
         return new_move
 
-    def ghost_make_move(self, board, power_up):
+    def make_move(self, board, power_up):
         if self.turns_to_wait == 0:
             self.find_possible_moves(board)
             self.prev_move = self.move
-            self.move = self.ghost_way()
+            self.move = self.next_move()
             self.change_position(board)
             if self.val == 10:
                 # if ghost is on the same coordinates as the pacman, kill pacman or ghost
@@ -270,7 +254,7 @@ class Ghost(Hero):
                     board[self.y][self.x] = 0
                     self.ghost_died(board)
                     self.turns_to_wait = 30
-                    GameData.POINTS += 200
+                    GameData.points += 200
                 else:
                     # returning false - pacman died
                     return False
@@ -278,8 +262,7 @@ class Ghost(Hero):
         return True
 
     def ghost_died(self, board):
-        GameData.POINTS += 200
+        GameData.points += 200
         board[self.starting_y][self.starting_x] = self.id
         self.set_default()
         self.turns_to_wait = 30
-
